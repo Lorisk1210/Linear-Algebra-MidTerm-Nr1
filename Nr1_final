@@ -1,0 +1,223 @@
+# HSG CS
+# Linear Algebra
+# MidTerm Home Assignmen: Exercise One by Loris K.
+
+    # There might be some rounding errors: f.e. if one solution x1=2 the program might display it as 1.99999999999456 or sth similar like that
+
+
+
+def main():
+
+    # The function input_sqr_matrix() is called, so the use can input the matrix he/she wants to work with
+    matrix = input_sqr_matrix()
+
+    print('') # design
+
+    # It is checked, whether the matrix is invertible
+    if check_invertible(matrix) == False:
+        print('The matrix is not invertible. Please restart the program and try again!')
+        raise SystemExit
+    else:
+        print('The matrix is invertible! The inverse is: ')
+
+    # The Inverse of the matrix is calculated
+    inverse = calc_inverse(matrix)
+
+    # The Inverse is printed
+    for i in range(len(inverse)):
+        print(inverse[i])
+
+    print('') # design
+
+    # The User is asked whether he/she knows the right-hand vector b which is neccessary for solving the system
+    b_exist = input('Do you know the right-hand vector b, to solve the system? (y/n) ')
+    if b_exist == 'y':
+
+        # The user can input the vector b
+        vector_b = input_b(len(matrix))
+
+        # The solution is calculated
+        x_solution = solve_system(inverse, vector_b)
+
+        print('') # design
+
+        # The solution is printed
+        for i in range(len(x_solution)):
+            print('The value of x', i+1, ' is: ', x_solution[i], sep='')
+
+ 
+   
+# This function calculates the inverse of the given matrix
+def calc_inverse(matrix):
+
+    size = len(matrix)
+
+    # An identity matrix of the same size is created
+    # All changes to the original matrix must also be done to the id matrix
+    identity_matrix = [[1 if i == j else 0 for j in range(size)] for i in range(size)]
+
+    for i in range(size):
+        
+        # this is used for pivoting. 
+        # If the diagonal element is zero the programs looks for a row below where the element is not zero
+        if matrix[i][i] == 0:
+            
+            for j in range(i + 1, size):
+
+                if matrix[j][i] != 0:
+                    
+                    # The rows are swapped via 2 dummy variables
+                    # This is done for the matrix aswell as the id_matrix
+                    dummy = matrix[i]                     
+                    id_dummy = identity_matrix[i]
+
+                    matrix[i] = matrix[j]
+                    identity_matrix[i] = identity_matrix[j]
+
+                    matrix[j] = dummy
+                    identity_matrix[j] = id_dummy
+                    
+                    break # If already swapped once the loop breaks, so that it doesnt swap again with the next row which might meet the conditions aswell
+        
+        # The rows are scaled so that the diagonal element equals one, which is neccessary for an id_matrix
+        get_one = 1 / matrix[i][i]
+        for j in range(size):
+            # Again both the matrix and the id_matrix must be divides by matrix[i][i]
+            matrix[i][j] = matrix[i][j] * get_one
+            identity_matrix[i][j] = identity_matrix[i][j] * get_one
+
+        # Performs row operations, to get every other element other than the diagonal ones to equal zero
+        # The identity matrix on the left side of the "augmented" matrix is formed
+        for j in range(size):
+            # If the element is not in the diagonal changes are made (if it is not already 0)
+            if j != i:
+                # The factor is calculated so that the row operations end up getting the elements to 0
+                # It is calculated how many times a row must be added/substracted to the row, so that the elements get to 0
+                factor = -matrix[j][i]
+                for k in range(size):
+                    # Again changes are made for both the matrix and the id_matrix
+                    matrix[j][k] += factor * matrix[i][k]
+                    identity_matrix[j][k] += factor * identity_matrix[i][k]
+
+    # returns the id_matrix, which now is the inverse because of the row operations made
+    return identity_matrix
+
+
+
+# This function lets the user input his/her n x n matrix which the wanted values for each element
+def input_sqr_matrix():
+    
+    print('') # design
+
+    # The user inputs the dimension: f.e. 3 --> 3x3 matrix
+    dim = int(input('What dimension shoud the square matrix have? '))
+    
+    # A matrix with the right dimensions is created
+    # All values atp are zero and will be changed as the user likes next
+    matrix = [[0 for i in range(dim)] for j in range(dim)]
+
+    # Here the user can input the specific values for each element he/she wants
+    for i in range(dim):
+        print('') # design
+        for j in range(dim):
+            print('What is the value of the ', (j+1), '. element in the ', (i+1), '. row? ', sep='', end='')
+            matrix[i][j] = float(input(''))
+
+    print('') # design
+
+    # The entered matrix is printed
+    print('You entered the following matrix: ')
+    for i in range(dim):
+        print(matrix[i])
+    
+    # The matrix is returned
+    return matrix
+
+
+
+# This function checks if the entered matrix is invertible
+def check_invertible(matrix):
+
+    # The determinant of the matrix is calculated (via the Laplace expansion of a determinant)
+    determinant = calc_determinant(matrix)
+    
+    # If the determinant equals zero, then the matrix is not invertible
+    if determinant == 0:
+        return False
+    # If the determinant is euqal to sth else than zero, the matrix is invertible
+    else:
+        return True
+
+
+
+# This function calculates the determinant via the Laplace expansion of a determinant
+# This is a recursive algorithm
+def calc_determinant(matrix):
+
+    # The smallest case of a 2 x 2 matrix
+    if len(matrix) == 2:
+        determinant = (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0])
+        return determinant
+    else:
+
+        determinant = 0
+        # The formula of the laplace expansion of a determinant is implemented
+        for j in range(len(matrix[0])):
+            plus_minus = (-1)**j
+            submatrix = calc_submatrix(matrix, 0, j)
+            determinant += plus_minus * matrix[0][j] * calc_determinant(submatrix)
+        
+        return determinant
+
+
+
+# The submatrix without the i/j row/column is formed which is needed for the formula
+def calc_submatrix(matrix, i, j):
+
+    return [row[:j] + row[j+1:] for row in (matrix[:i] + matrix[i+1:])]
+
+
+
+# This function is used, for the input of the right-hand vector b
+def input_b(n):
+
+    print('') # design
+
+    # A b vector with n elements with all values = 0 is created (The values will be changed next)
+    b = [0] * n
+
+    # The user can input the values for the vector, which he wants
+    for i in range(n):
+        print('Please enter the value of b', (i+1), ': ', sep='', end='')
+        b[i] = float(input(''))
+    
+    # The right-hand vector b is returned
+    return b
+
+
+
+# This function solves the system with the calculated inverse-matrix and the right-hand vector b
+def solve_system(inverse, b):
+
+    n = len(inverse)
+    # The vector x (in Ax=b) is created first with all values 0 0
+    x = [0] * n
+
+    # The next value of vector x is calculated with the inverse Matrix because x = A^-1 * b
+    for i in range(n):
+        
+        next_x = 0
+
+        for j in range(n):
+
+            next_x += inverse[i][j] * b[j]
+
+        x[i] = next_x
+    
+    # The solution vector x is returned
+    return x
+
+
+
+# The main function is called, once the program is executed
+main()
